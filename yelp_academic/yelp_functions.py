@@ -39,7 +39,7 @@ def get_processed_inputs(df, column='text', mode='list_of_strings'):
 
 
 def sum_to_one(input_vector):
-    return [vector/sum(vector) if sum(vector) != 0 else vector for vector in input_vector]
+    return [vector / sum(vector) if sum(vector) != 0 else vector for vector in input_vector]
 
 
 def get_restaurant_vectors():
@@ -48,3 +48,14 @@ def get_restaurant_vectors():
     ids, embedding, price_range = restaurant_vectors[0], restaurant_vectors[1], restaurant_vectors[2]
     return ids, embedding, price_range
 
+
+def filter_by_category(source_df, category):
+    target_df = source_df[source_df['categories'].str.contains(category, na=False)]
+    return target_df
+
+
+def balance_classes(source_df, class_column, n_per_class):
+    target_df = source_df.groupby(class_column).apply(
+        lambda x: x.sample(n_per_class, random_state=0).reset_index(drop=True))
+    target_df = target_df.droplevel(level=0)
+    return target_df
