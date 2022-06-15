@@ -14,9 +14,9 @@ def mutual_information_gap(df, h_list, z_list):
     return np.mean(mig)
 
 
-def inverted_kruskals_stress(df, x_list, z_list, accuracy):
+def inverted_kruskals_stress(df, x_list, z_list, accuracy=0.01, silent=False):
     x, z = df[x_list].to_numpy(), df[z_list].to_numpy()
-    min_stress = minimum_stress(x, z, accuracy)
+    min_stress = minimum_stress(x, z, accuracy, silent)
     return 1 - min_stress
 
 
@@ -47,15 +47,20 @@ def stress_function(x, z, scale_factor):
 
 
 # search for the minimum kruskal's stress
-def minimum_stress(x, z, accuracy):
+def minimum_stress(x, z, accuracy, silent):
 
     lower_bound, upper_bound, window_size = 0.2, 5, 4.8
 
     while window_size > accuracy:
-        print(f'Search Range: [{lower_bound:.5f}, {upper_bound:.5f}]')
-        search_range, stress_list = np.linspace(lower_bound, upper_bound, 10), []
-        for scale in tqdm(search_range):
-            stress_list.append(stress_function(x, z, scale))
+        if not silent:
+            print(f'Search Range: [{lower_bound:.5f}, {upper_bound:.5f}]')
+            search_range, stress_list = np.linspace(lower_bound, upper_bound, 10), []
+            for scale in tqdm(search_range):
+                stress_list.append(stress_function(x, z, scale))
+        else:
+            search_range, stress_list = np.linspace(lower_bound, upper_bound, 10), []
+            for scale in search_range:
+                stress_list.append(stress_function(x, z, scale))
 
         argmin = np.argmin(stress_list)
 
@@ -70,6 +75,7 @@ def minimum_stress(x, z, accuracy):
             upper_bound = search_range[argmin + 1]
 
         window_size = upper_bound - lower_bound
-        print(f'Inverted Stress: {1 - stress_list[argmin]:.3f}, New Window Size: {window_size:.5f}')
+        if not silent:
+            print(f'Inverted Stress: {1 - stress_list[argmin]:.3f}, New Window Size: {window_size:.5f}')
 
     return stress_function(x, z, 0.5 * (upper_bound + lower_bound))
