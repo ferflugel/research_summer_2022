@@ -1,0 +1,14 @@
+Original experiment:
+data['x_0'] = np.tanh(data['h_0'] + data['h_1'])
+data['x_1'] = np.maximum(0, data['h_0']) - data['h_1']
+data['x_2'] = np.log(abs(data['h_0'])) * data['h_1']
+
+Trial 0:
+data['x_0'] = data['h_0'] + data['h_1']
+data['x_1'] = np.maximum(0, data['h_0'])
+data['x_2'] = abs(data['h_0']) * data['h_1']
+
+Trial 1:
+data['x_0'] = data['h_0'] * data['h_1']
+data['x_1'] = np.minimum(0, data['h_0'] + data['h_1'])
+data['x_2'] = np.tanh(data['h_0'])
