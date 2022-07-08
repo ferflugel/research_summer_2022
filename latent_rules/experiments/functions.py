@@ -92,7 +92,8 @@ def get_correlations(results):
     correlation = []
     for result in results:
         correlation.append(np.corrcoef(result[0], result[1])[0, 1])
-    return correlation
+    initial_predictivity = np.array(results[0][0]).mean()
+    return correlation, initial_predictivity
 
 
 """HELPER FUNCTIONS"""
