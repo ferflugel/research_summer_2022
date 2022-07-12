@@ -32,9 +32,9 @@ def generate_hidden_factors(samples=500, seed=0):
 def generate_observations(data):
 
     # Generate observations from non-linear transformations
-    data['x_0'] = random_transformation(data['h_0']) * data['h_1']
+    data['x_0'] = random_transformation(data['h_0'])
     data['x_1'] = random_transformation(data['h_1'])
-    data['x_2'] = data['h_0'] + random_transformation(data['h_1'])
+    data['x_2'] = random_transformation(data['h_1'] + data['h_1'])
 
     # Normalize all observations to have mean of 0 and variance of 1
     for i in range(3):
@@ -48,7 +48,7 @@ def generate_observations(data):
     return data_train, data_test
 
 
-def run_experiment(data_train, data_test, noise_range, verbose=True):
+def run_experiment(data_train, data_test, noise_range, smoothness='kruskal', verbose=True):
 
     results = [[[], [], []] for _ in range(len(noise_range))]
 
@@ -62,17 +62,32 @@ def run_experiment(data_train, data_test, noise_range, verbose=True):
             noisy_data_test[f'x_{i}'] = noisy_data_test[f'x_{i}'] + np.random.normal(0, std, data_test.shape[0])
 
         # Obtain the individual latent spaces
-        fa, pca, ica = get_latent_spaces(noisy_data_train, noisy_data_test, methods)
+        (fa, pca, ica), jacobians = get_latent_spaces(noisy_data_train, noisy_data_test, methods)
 
         # Get metrics for each method
         for index, latent_space in enumerate([fa, pca, ica]):
             results[trial][0].append(multiple_correlation(latent_space, 'y', z_variables))
-            results[trial][1].append(inverted_kruskals_stress(latent_space, x_variables, z_variables, 0.01, silent=True))
+            if smoothness == 'kruskal':
+                results[trial][1].append(inverted_kruskals_stress(latent_space, x_variables,
+                                                                  z_variables, 0.01, silent=True))
+            elif smoothness == 'jacobian':
+                results[trial][1].append(1 / np.linalg.norm(jacobians[index]))
+            else:
+                print('Invalid smoothness method')
+                exit()
 
         if verbose:
             print(f'Done std {std}')
 
     return results
+
+
+def get_correlations(results):
+    correlation = []
+    for result in results:
+        correlation.append(np.corrcoef(result[0], result[1])[0, 1])
+    initial_predictivity = np.array(results[0][0]).mean()
+    return correlation, initial_predictivity
 
 
 def plot_correlations(results, noise_range, trial):
@@ -88,27 +103,21 @@ def plot_correlations(results, noise_range, trial):
     plt.show()
 
 
-def get_correlations(results):
-    correlation = []
-    for result in results:
-        correlation.append(np.corrcoef(result[0], result[1])[0, 1])
-    initial_predictivity = np.array(results[0][0]).mean()
-    return correlation, initial_predictivity
-
-
 """HELPER FUNCTIONS"""
 
 
 def get_latent_spaces(df_train, df_test, latent_methods):
 
     # List to store dataframes for each latent representation
-    latent_spaces = []
+    latent_spaces, jacobians = [], []
 
     # Create dataframes for each method
     for latent_method in latent_methods:
-        latent_spaces.append(create_latent_space(df_train, df_test, latent_method))
+        latent_space, jacobian = create_latent_space(df_train, df_test, latent_method)
+        latent_spaces.append(latent_space)
+        jacobians.append(jacobian)
 
-    return latent_spaces
+    return latent_spaces, jacobians
 
 
 def create_latent_space(df_train, df_test, latent_method):
@@ -124,7 +133,7 @@ def create_latent_space(df_train, df_test, latent_method):
     latent = pd.DataFrame(latent, columns=z_variables)
     latent = pd.concat([df_test, latent], axis=1)
 
-    return latent
+    return latent, mapping.components_
 
 
 # Apply a random non-linear transformation to the data

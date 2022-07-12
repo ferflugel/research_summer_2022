@@ -12,3 +12,8 @@ Trial 1:
 data['x_0'] = data['h_0'] * data['h_1']
 data['x_1'] = np.minimum(0, data['h_0'] + data['h_1'])
 data['x_2'] = np.tanh(data['h_0'])
+
+Trials 2 and 3:
+data['x_0'] = random_transformation(data['h_0']) * data['h_1']
+data['x_1'] = random_transformation(data['h_1'])
+data['x_2'] = data['h_0'] + random_transformation(data['h_1'])
