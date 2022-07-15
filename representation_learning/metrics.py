@@ -14,6 +14,11 @@ def mutual_information_gap(df, h_list, z_list):
     return np.mean(mig)
 
 
+def separated_attribute_predictability(df, h_list, z_list):
+    sap = [individual_sap(df, h_k, z_list) for h_k in h_list]
+    return np.mean(sap)
+
+
 def inverted_kruskals_stress(df, x_list, z_list, accuracy=0.01, silent=False):
     x, z = df[x_list].to_numpy(), df[z_list].to_numpy()
     min_stress = minimum_stress(x, z, accuracy, silent)
@@ -33,6 +38,14 @@ def individual_mig(df, h_k, z_list):
     mutual_information = mutual_info_regression(df[z_list], df[h_k])
     first = np.max(mutual_information)
     second = np.max(mutual_information[mutual_information != first])
+    return first - second
+
+
+# calculate the SAP for a single h_k
+def individual_sap(df, h_k, z_list):
+    R_squared = (df[[h_k] + z_list].corr() ** 2).iloc[0, 1:]
+    first = R_squared.max()
+    second = R_squared[R_squared != first].max()
     return first - second
 
 
